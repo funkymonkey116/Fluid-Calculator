@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>NICU IV Fluid Calculator</title>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -12,6 +14,8 @@
             color: #1e293b;
             line-height: 1.6;
             min-height: 100vh;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            -webkit-text-size-adjust: 100%;
         }
         .container {
             max-width: 720px;
@@ -209,7 +213,7 @@
             font-size: 1.15rem;
             font-weight: 600;
         }
-        .results-table-wrap { overflow-x: auto; }
+        .results-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .results-table {
             width: 100%;
             border-collapse: collapse;
@@ -249,11 +253,18 @@
             color: #64748b;
             font-weight: 400;
         }
-        @media (max-width: 480px) {
+        @media (max-width: 600px) {
+            .container { padding: 16px 10px 40px; }
             .form-row { flex-direction: column; gap: 0; }
             .weight-card { justify-content: center; }
-            .results-table { font-size: 0.8rem; }
-            .results-table th, .results-table td { padding: 8px 6px; }
+            .type-selector { flex-wrap: wrap; gap: 8px; }
+            .type-btn { flex: 1 1 40%; padding: 12px 10px; font-size: 0.95rem; min-height: 44px; }
+            .btn-add, .btn-calculate { min-height: 48px; }
+            .form-group input, .form-group select { font-size: 16px; padding: 12px 14px; }
+            .weight-card input { font-size: 16px; }
+            .results-table { font-size: 0.78rem; }
+            .results-table th, .results-table td { padding: 8px 5px; }
+            .fluid-body { padding: 16px 12px; }
         }
     </style>
 </head>
@@ -395,6 +406,16 @@
                                 '<input type="number" id="ca-tpn-' + id + '" step="0.1" min="0" placeholder="0">' +
                             '</div>' +
                             '<div class="form-group">' +
+                                '<label>Phos (mEq/kg/day)</label>' +
+                                '<input type="number" id="phos-tpn-' + id + '" step="0.1" min="0" placeholder="0">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="form-row">' +
+                            '<div class="form-group">' +
+                                '<label>Mg (mEq/kg/day)</label>' +
+                                '<input type="number" id="mg-tpn-' + id + '" step="0.1" min="0" placeholder="0">' +
+                            '</div>' +
+                            '<div class="form-group">' +
                                 '<label>Acetate : Chloride Ratio</label>' +
                                 '<select id="ace-cl-' + id + '">' +
                                     '<option value="max-ace">Max Acetate</option>' +
@@ -491,7 +512,7 @@
                 return;
             }
 
-            var totalRate = 0, totalNa = 0, totalK = 0, totalCa = 0, totalGIR = 0, totalProtein = 0, totalKcal = 0;
+            var totalRate = 0, totalNa = 0, totalK = 0, totalCa = 0, totalPhos = 0, totalMg = 0, totalGIR = 0, totalProtein = 0, totalKcal = 0;
             var rows = [];
 
             fluidCards.forEach(function(card) {
@@ -501,7 +522,7 @@
 
                 var rate = parseFloat(document.getElementById('rate-' + id).value) || 0;
                 var volPerKgDay = weight > 0 ? rate * 24 / weight : 0;
-                var na = 0, k = 0, ca = 0, gir = 0, protein = 0, kcal = 0;
+                var na = 0, k = 0, ca = 0, phos = 0, mg = 0, gir = 0, protein = 0, kcal = 0;
                 var fluidLabel = '';
                 var aceClLabel = '';
 
@@ -532,9 +553,15 @@
                     na = parseFloat(document.getElementById('na-tpn-' + id).value) || 0;
                     k = parseFloat(document.getElementById('k-tpn-' + id).value) || 0;
                     ca = parseFloat(document.getElementById('ca-tpn-' + id).value) || 0;
+                    phos = parseFloat(document.getElementById('phos-tpn-' + id).value) || 0;
+                    mg = parseFloat(document.getElementById('mg-tpn-' + id).value) || 0;
                     var aceCl = document.getElementById('ace-cl-' + id).value;
 
                     gir = dextroseTpn * rate / (6 * weight);
+
+                    // TPN kcal: dextrose 3.4 kcal/g + protein 4 kcal/g
+                    var dexGperKgDay = dextroseTpn / 100 * rate * 24 / weight;
+                    kcal = dexGperKgDay * 3.4 + protein * 4;
 
                     var aceClLabels = {
                         'max-ace': 'Max Acetate',
@@ -550,6 +577,8 @@
                     var mlPerKg = parseFloat(document.getElementById('lipids-mlkg-' + id).value) || 0;
                     volPerKgDay = mlPerKg;
                     rate = mlPerKg * weight / 24;
+                    // 20% intralipid = 2 kcal/mL
+                    kcal = mlPerKg * 2;
                     fluidLabel = 'Lipids: ' + fmt(mlPerKg, 1) + ' mL/kg/day';
 
                 } else if (type === 'feeds') {
@@ -579,6 +608,8 @@
                 totalNa += na;
                 totalK += k;
                 totalCa += ca;
+                totalPhos += phos;
+                totalMg += mg;
                 totalGIR += gir;
                 totalProtein += protein;
                 totalKcal += kcal;
@@ -591,6 +622,8 @@
                     na: na,
                     k: k,
                     ca: ca,
+                    phos: phos,
+                    mg: mg,
                     gir: gir,
                     protein: protein,
                     kcal: kcal,
@@ -617,6 +650,8 @@
                     '<th>Na<br><small>mEq/kg/day</small></th>' +
                     '<th>K<br><small>mEq/kg/day</small></th>' +
                     '<th>Ca<br><small>mEq/kg/day</small></th>' +
+                    '<th>Phos<br><small>mEq/kg/day</small></th>' +
+                    '<th>Mg<br><small>mEq/kg/day</small></th>' +
                     '<th>GIR<br><small>mg/kg/min</small></th>' +
                     '<th>Protein<br><small>g/kg/day</small></th>' +
                     '<th>kcal<br><small>kcal/kg/day</small></th>' +
@@ -633,6 +668,8 @@
                         '<td>' + fmt(r.na, 2) + '</td>' +
                         '<td>' + fmt(r.k, 2) + '</td>' +
                         '<td>' + fmt(r.ca, 2) + '</td>' +
+                        '<td>' + (r.phos > 0 ? fmt(r.phos, 2) : '\u2014') + '</td>' +
+                        '<td>' + (r.mg > 0 ? fmt(r.mg, 2) : '\u2014') + '</td>' +
                         '<td>' + fmt(r.gir, 2) + '</td>' +
                         '<td>' + (r.protein > 0 ? fmt(r.protein, 1) : '\u2014') + '</td>' +
                         '<td>' + (r.kcal > 0 ? fmt(r.kcal, 1) : '\u2014') + '</td>' +
@@ -648,6 +685,8 @@
                         '<td>' + fmt(totalNa, 2) + '</td>' +
                         '<td>' + fmt(totalK, 2) + '</td>' +
                         '<td>' + fmt(totalCa, 2) + '</td>' +
+                        '<td>' + (totalPhos > 0 ? fmt(totalPhos, 2) : '\u2014') + '</td>' +
+                        '<td>' + (totalMg > 0 ? fmt(totalMg, 2) : '\u2014') + '</td>' +
                         '<td>' + fmt(totalGIR, 2) + '</td>' +
                         '<td>' + (totalProtein > 0 ? fmt(totalProtein, 1) : '\u2014') + '</td>' +
                         '<td>' + (totalKcal > 0 ? fmt(totalKcal, 1) : '\u2014') + '</td>' +
