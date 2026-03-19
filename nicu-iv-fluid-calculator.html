@@ -406,8 +406,22 @@
         .saved-entry:last-child { border-bottom: none; }
         .saved-entry:hover { background: #f8fafc; }
         .saved-entry.active {
-            background: linear-gradient(90deg, #eff6ff, #ffffff);
-            border-left: 3px solid #3b82f6;
+            background: linear-gradient(90deg, #dbeafe, #eff6ff);
+            border-left: 4px solid #2563eb;
+            box-shadow: inset 0 0 0 1px rgba(37,99,235,0.08);
+        }
+        .saved-entry.active .saved-entry-name { color: #1e3a8a; }
+        .saved-entry-active-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #2563eb;
+            background: #dbeafe;
+            padding: 1px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+            vertical-align: middle;
+            letter-spacing: 0.03em;
         }
         .saved-entry-info { cursor: pointer; flex: 1; min-width: 0; }
         .saved-entry-name { font-weight: 600; color: #1e293b; }
@@ -519,6 +533,25 @@
             '1/2 NaCl': 77,
             'NaCl': 154
         };
+
+        // Electrolyte content per 100 mL of final preparation (mEq for Na/K/Ca/Phos/Mg, g for protein)
+        // Values from Abbott product references — verify against current manufacturer data before clinical use
+        const FEED_FORMULAS = {
+            'custom':        { label: 'Custom',                        calPerOz: 0,  per100: { na: 0,   k: 0,   ca: 0,    phos: 0,    mg: 0,    protein: 0   } },
+            'bm20':          { label: 'Breast Milk (20 kcal/oz)',      calPerOz: 20, per100: { na: 0.8, k: 1.4, ca: 1.30, phos: 0.45, mg: 0.29, protein: 1.0 } },
+            'sim360':        { label: 'Similac 360 Total Care',        calPerOz: 20, per100: { na: 0.7, k: 1.9, ca: 2.65, phos: 1.23, mg: 0.34, protein: 1.4 } },
+            'bm-hmf24':      { label: 'BM + HMF 24 kcal',             calPerOz: 24, per100: { na: 1.2, k: 2.0, ca: 5.85, phos: 2.16, mg: 0.37, protein: 1.8 } },
+            'bm-hmfhp24':    { label: 'BM + HMF HP 24 kcal',          calPerOz: 24, per100: { na: 1.2, k: 2.0, ca: 5.85, phos: 2.16, mg: 0.37, protein: 2.2 } },
+            'sim-hmf24':     { label: 'Sim + HMF 24 kcal',            calPerOz: 24, per100: { na: 1.1, k: 2.5, ca: 7.20, phos: 2.94, mg: 0.42, protein: 2.2 } },
+            'sim-hmfhp24':   { label: 'Sim + HMF HP 24 kcal',         calPerOz: 24, per100: { na: 1.1, k: 2.5, ca: 7.20, phos: 2.94, mg: 0.42, protein: 2.6 } },
+            'bm-neosure24':  { label: 'BM + NeoSure Pwd 24 kcal',     calPerOz: 24, per100: { na: 1.3, k: 2.2, ca: 3.00, phos: 1.06, mg: 0.49, protein: 1.6 } },
+            'sim-neosure24': { label: 'Sim + NeoSure Pwd 24 kcal',     calPerOz: 24, per100: { na: 1.2, k: 2.7, ca: 4.35, phos: 1.84, mg: 0.54, protein: 2.0 } },
+            'neosure24':     { label: 'NeoSure 24 kcal/oz',           calPerOz: 24, per100: { na: 1.2, k: 2.8, ca: 4.25, phos: 1.65, mg: 0.50, protein: 2.1 } }
+        };
+
+        var FEED_FORMULA_OPTIONS = Object.keys(FEED_FORMULAS).map(function(key) {
+            return '<option value="' + key + '">' + FEED_FORMULAS[key].label + '</option>';
+        }).join('');
 
         let fluidCounter = 0;
         var currentEntryId = null;
@@ -646,6 +679,12 @@
 
                     '<div id="feeds-form-' + id + '" class="fluid-form">' +
                         '<hr class="section-divider">' +
+                        '<div class="form-group">' +
+                            '<label>Formula / Recipe</label>' +
+                            '<select id="feed-formula-' + id + '" onchange="onFormulaChange(' + id + ')">' +
+                                FEED_FORMULA_OPTIONS +
+                            '</select>' +
+                        '</div>' +
                         '<div class="form-row">' +
                             '<div class="form-group">' +
                                 '<label>Frequency</label>' +
@@ -695,6 +734,14 @@
             var freq = document.getElementById('feed-freq-' + id).value;
             var label = document.getElementById('feed-vol-label-' + id);
             label.textContent = (freq === 'continuous') ? 'Rate (mL/hr)' : 'Volume per feed (mL)';
+        }
+
+        function onFormulaChange(id) {
+            var key = document.getElementById('feed-formula-' + id).value;
+            var formula = FEED_FORMULAS[key];
+            if (formula && key !== 'custom') {
+                document.getElementById('feed-cal-' + id).value = formula.calPerOz;
+            }
         }
 
         function removeFluid(id) {
@@ -793,6 +840,8 @@
                     var freq = document.getElementById('feed-freq-' + id).value;
                     var feedVol = parseFloat(document.getElementById('feed-vol-' + id).value) || 0;
                     var calPerOz = parseFloat(document.getElementById('feed-cal-' + id).value) || 0;
+                    var formulaKey = document.getElementById('feed-formula-' + id).value;
+                    var formula = FEED_FORMULAS[formulaKey];
                     var dailyVol;
                     var feedsPerDay = { 'continuous': 0, 'q2': 12, 'q3': 8, 'q4': 6 };
                     var freqLabels = { 'continuous': 'Continuous', 'q2': 'Q2h', 'q3': 'Q3h', 'q4': 'Q4h' };
@@ -808,8 +857,18 @@
                     volPerKgDay = dailyVol / weight;
                     kcal = (dailyVol / 30) * calPerOz / weight;
 
+                    if (formula && formulaKey !== 'custom') {
+                        na = formula.per100.na * volPerKgDay / 100;
+                        k = formula.per100.k * volPerKgDay / 100;
+                        ca = formula.per100.ca * volPerKgDay / 100;
+                        phos = formula.per100.phos * volPerKgDay / 100;
+                        mg = formula.per100.mg * volPerKgDay / 100;
+                        protein = formula.per100.protein * volPerKgDay / 100;
+                    }
+
+                    var formulaLabel = (formula && formulaKey !== 'custom') ? formula.label : '';
                     var volLabel = (freq === 'continuous') ? fmt(feedVol, 1) + ' mL/hr' : fmt(feedVol, 1) + ' mL x' + feedsPerDay[freq];
-                    fluidLabel = 'Feeds: ' + freqLabels[freq] + ', ' + volLabel + ', ' + fmt(calPerOz, 0) + ' kcal/oz';
+                    fluidLabel = 'Feeds: ' + (formulaLabel ? formulaLabel + ', ' : '') + freqLabels[freq] + ', ' + volLabel + ', ' + fmt(calPerOz, 0) + ' kcal/oz';
                 }
 
                 totalRate += rate;
@@ -953,6 +1012,7 @@
                     fluid.freq = document.getElementById('feed-freq-' + id).value;
                     fluid.vol = document.getElementById('feed-vol-' + id).value;
                     fluid.calPerOz = document.getElementById('feed-cal-' + id).value;
+                    fluid.formula = document.getElementById('feed-formula-' + id).value;
                 }
                 fluids.push(fluid);
             });
@@ -988,6 +1048,7 @@
                 } else if (fluid.type === 'lipids') {
                     document.getElementById('lipids-mlkg-' + id).value = fluid.mlPerKg || '';
                 } else if (fluid.type === 'feeds') {
+                    document.getElementById('feed-formula-' + id).value = fluid.formula || 'custom';
                     document.getElementById('feed-freq-' + id).value = fluid.freq || 'q3';
                     document.getElementById('feed-vol-' + id).value = fluid.vol || '';
                     document.getElementById('feed-cal-' + id).value = fluid.calPerOz || '';
@@ -1020,6 +1081,7 @@
             document.getElementById('entry-name').value = '';
             currentEntryId = entry.id;
             renderSavedEntries();
+
         }
 
         function loadEntry(id) {
@@ -1030,6 +1092,7 @@
                 currentEntryId = id;
                 document.getElementById('entry-name').value = entry.name;
                 renderSavedEntries();
+    
             }
         }
 
@@ -1046,6 +1109,7 @@
             if (newName) entries[idx].name = newName;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
             renderSavedEntries();
+
         }
 
         function deleteEntry(id) {
@@ -1054,6 +1118,7 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
             if (currentEntryId === id) currentEntryId = null;
             renderSavedEntries();
+
         }
 
         function toggleSavedEntries() {
@@ -1084,9 +1149,10 @@
                 var weight = entry.data.weight ? entry.data.weight + ' kg' : 'no weight';
                 var fluidCount = entry.data.fluids.length;
                 var isActive = entry.id === currentEntryId;
+                var badge = isActive ? '<span class="saved-entry-active-badge">&#10003; Active</span>' : '';
                 return '<div class="saved-entry' + (isActive ? ' active' : '') + '">' +
                     '<div class="saved-entry-info" onclick="loadEntry(' + entry.id + ')">' +
-                        '<div class="saved-entry-name">' + escapeHtml(entry.name) + '</div>' +
+                        '<div class="saved-entry-name">' + escapeHtml(entry.name) + badge + '</div>' +
                         '<div class="saved-entry-meta">' + dateStr + ' &middot; ' + weight + ' &middot; ' + fluidCount + ' fluid' + (fluidCount !== 1 ? 's' : '') + '</div>' +
                     '</div>' +
                     '<div class="saved-entry-actions">' +
