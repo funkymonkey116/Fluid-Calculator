@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NICU IV Fluid Calculator</title>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f0f4f8;
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 24px 16px 60px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .header h1 {
+            font-size: 1.75rem;
+            color: #1e40af;
+            margin-bottom: 4px;
+        }
+        .header p {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .weight-card {
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .weight-card label {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .weight-card input {
+            width: 120px;
+            padding: 10px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .weight-card input:focus { border-color: #3b82f6; }
+        .weight-card .unit {
+            color: #64748b;
+            font-weight: 500;
+        }
+        .fluid-card-header {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            color: #fff;
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .fluid-card-header h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+        .btn-remove {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: #fff;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .btn-remove:hover { background: rgba(255,255,255,0.3); }
+        .fluid-body { padding: 20px; }
+        .type-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .type-btn {
+            flex: 1;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .type-btn:hover { border-color: #93c5fd; background: #eff6ff; }
+        .type-btn.active {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+        }
+        .chosen-label {
+            font-size: 0.9rem;
+            color: #3b82f6;
+            font-weight: 500;
+            margin-bottom: 16px;
+            padding: 8px 12px;
+            background: #eff6ff;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        .form-group {
+            margin-bottom: 14px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: #475569;
+            margin-bottom: 5px;
+        }
+        .form-group label .hint {
+            font-weight: 400;
+            color: #94a3b8;
+            font-size: 0.8rem;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #fff;
+        }
+        .form-group input:focus,
+        .form-group select:focus { border-color: #3b82f6; }
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+        .form-row .form-group { flex: 1; }
+        .fluid-form { display: none; }
+        .fluid-form.visible { display: block; }
+        .section-divider {
+            border: none;
+            border-top: 1px solid #e2e8f0;
+            margin: 16px 0;
+        }
+        .btn-add {
+            width: 100%;
+            padding: 14px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            background: transparent;
+            color: #64748b;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+        .btn-add:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            background: #eff6ff;
+        }
+        .btn-calculate {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #1e40af, #2563eb);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .btn-calculate:hover { opacity: 0.92; }
+        #results { display: none; }
+        #results.visible { display: block; }
+        .results-card { margin-top: 24px; }
+        .results-header {
+            background: linear-gradient(135deg, #065f46, #059669);
+            color: #fff;
+            padding: 14px 20px;
+        }
+        .results-header h2 {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+        .results-table-wrap { overflow-x: auto; }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .results-table th {
+            background: #f1f5f9;
+            padding: 10px 12px;
+            text-align: right;
+            font-weight: 600;
+            color: #475569;
+            white-space: nowrap;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .results-table th:first-child { text-align: left; }
+        .results-table td {
+            padding: 10px 12px;
+            text-align: right;
+            border-bottom: 1px solid #f1f5f9;
+            white-space: nowrap;
+        }
+        .results-table td:first-child {
+            text-align: left;
+            font-weight: 500;
+        }
+        .results-table .total-row {
+            background: #ecfdf5;
+            font-weight: 700;
+        }
+        .results-table .total-row td {
+            border-top: 2px solid #059669;
+            border-bottom: none;
+            color: #065f46;
+        }
+        .fluid-detail-note {
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: 400;
+        }
+        @media (max-width: 480px) {
+            .form-row { flex-direction: column; gap: 0; }
+            .weight-card { justify-content: center; }
+            .results-table { font-size: 0.8rem; }
+            .results-table th, .results-table td { padding: 8px 6px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NICU IV Fluid Calculator</h1>
+            <p>Calculate electrolyte delivery and GIR from IV fluids</p>
+        </div>
+
+        <div class="card weight-card">
+            <label for="weight">Baby's Weight:</label>
+            <input type="number" id="weight" step="0.001" min="0" placeholder="0.000">
+            <span class="unit">kg</span>
+        </div>
+
+        <div id="fluids-container"></div>
+
+        <button class="btn-add" onclick="addFluid()">+ Add Another Fluid</button>
+        <button class="btn-calculate" onclick="calculate()">Calculate</button>
+
+        <div id="results">
+            <div class="card results-card">
+                <div class="results-header">
+                    <h2>Results</h2>
+                </div>
+                <div class="results-body">
+                    <div class="results-table-wrap">
+                        <table class="results-table" id="results-table">
+                            <thead id="results-thead"></thead>
+                            <tbody id="results-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const NA_CONCENTRATIONS = {
+            'none': 0,
+            '1/4 NaAce': 38.5,
+            '1/2 NaAce': 77,
+            'NaAce': 154,
+            '1/4 NaCl': 38.5,
+            '1/2 NaCl': 77,
+            'NaCl': 154
+        };
+
+        let fluidCounter = 0;
+
+        function addFluid() {
+            fluidCounter++;
+            const id = fluidCounter;
+            const container = document.getElementById('fluids-container');
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.id = 'fluid-' + id;
+            card.innerHTML =
+                '<div class="fluid-card-header">' +
+                    '<h3>Select Fluid ' + id + '</h3>' +
+                    '<button class="btn-remove" onclick="removeFluid(' + id + ')" title="Remove fluid">&times;</button>' +
+                '</div>' +
+                '<div class="fluid-body">' +
+                    '<div class="type-selector">' +
+                        '<button class="type-btn" id="btn-clears-' + id + '" onclick="selectType(' + id + ', \'clears\')">Clears</button>' +
+                        '<button class="type-btn" id="btn-tpn-' + id + '" onclick="selectType(' + id + ', \'tpn\')">TPN</button>' +
+                        '<button class="type-btn" id="btn-lipids-' + id + '" onclick="selectType(' + id + ', \'lipids\')">Lipids</button>' +
+                        '<button class="type-btn" id="btn-feeds-' + id + '" onclick="selectType(' + id + ', \'feeds\')">Feeds</button>' +
+                    '</div>' +
+                    '<div id="chosen-' + id + '"></div>' +
+                    '<div id="rate-group-' + id + '" class="form-group" style="display:none;">' +
+                        '<label>Rate (mL/hr)</label>' +
+                        '<input type="number" id="rate-' + id + '" step="0.1" min="0" placeholder="0.0">' +
+                    '</div>' +
+
+                    '<div id="clears-form-' + id + '" class="fluid-form">' +
+                        '<hr class="section-divider">' +
+                        '<div class="form-row">' +
+                            '<div class="form-group">' +
+                                '<label>Dextrose %</label>' +
+                                '<input type="number" id="dextrose-clears-' + id + '" step="0.1" min="0" placeholder="10">' +
+                            '</div>' +
+                            '<div class="form-group">' +
+                                '<label>Fluid Type</label>' +
+                                '<select id="fluid-type-' + id + '">' +
+                                    '<option value="none">None (Plain D-Water)</option>' +
+                                    '<option value="1/4 NaAce">1/4 NaAce</option>' +
+                                    '<option value="1/2 NaAce">1/2 NaAce</option>' +
+                                    '<option value="NaAce">NaAce (Full)</option>' +
+                                    '<option value="1/4 NaCl">1/4 NaCl</option>' +
+                                    '<option value="1/2 NaCl">1/2 NaCl</option>' +
+                                    '<option value="NaCl">NaCl (Full)</option>' +
+                                '</select>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="form-group">' +
+                            '<label>Syringe Volume (mL)</label>' +
+                            '<input type="number" id="syringe-vol-' + id + '" step="0.1" min="0" placeholder="60">' +
+                        '</div>' +
+                        '<div class="form-row">' +
+                            '<div class="form-group">' +
+                                '<label>K in Syringe (mEq)</label>' +
+                                '<input type="number" id="k-clears-' + id + '" step="0.01" min="0" placeholder="0">' +
+                            '</div>' +
+                            '<div class="form-group">' +
+                                '<label>Ca Gluconate in Syringe (mg)</label>' +
+                                '<input type="number" id="ca-clears-' + id + '" step="1" min="0" placeholder="0">' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+
+                    '<div id="tpn-form-' + id + '" class="fluid-form">' +
+                        '<hr class="section-divider">' +
+                        '<div class="form-row">' +
+                            '<div class="form-group">' +
+                                '<label>Dextrose %</label>' +
+                                '<input type="number" id="dextrose-tpn-' + id + '" step="0.1" min="0" placeholder="10">' +
+                            '</div>' +
+                            '<div class="form-group">' +
+                                '<label>Protein (g/kg/day)</label>' +
+                                '<input type="number" id="protein-' + id + '" step="0.1" min="0" placeholder="0">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="form-row">' +
+                            '<div class="form-group">' +
+                                '<label>Na (mEq/kg/day)</label>' +
+                                '<input type="number" id="na-tpn-' + id + '" step="0.1" min="0" placeholder="0">' +
+                            '</div>' +
+                            '<div class="form-group">' +
+                                '<label>K (mEq/kg/day)</label>' +
+                                '<input type="number" id="k-tpn-' + id + '" step="0.1" min="0" placeholder="0">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="form-row">' +
+                            '<div class="form-group">' +
+                                '<label>Ca (mEq/kg/day)</label>' +
+                                '<input type="number" id="ca-tpn-' + id + '" step="0.1" min="0" placeholder="0">' +
+                            '</div>' +
+                            '<div class="form-group">' +
+                                '<label>Acetate : Chloride Ratio</label>' +
+                                '<select id="ace-cl-' + id + '">' +
+                                    '<option value="max-ace">Max Acetate</option>' +
+                                    '<option value="2:1-ace">2:1 in favor of Acetate</option>' +
+                                    '<option value="1:1" selected>Balanced 1:1</option>' +
+                                    '<option value="2:1-cl">2:1 in favor of Chloride</option>' +
+                                    '<option value="max-cl">Max Chloride</option>' +
+                                '</select>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+
+                    '<div id="lipids-form-' + id + '" class="fluid-form">' +
+                        '<hr class="section-divider">' +
+                        '<div class="form-group">' +
+                            '<label>Lipids (mL/kg/day)</label>' +
+                            '<input type="number" id="lipids-mlkg-' + id + '" step="0.1" min="0" placeholder="0">' +
+                        '</div>' +
+                    '</div>' +
+
+                    '<div id="feeds-form-' + id + '" class="fluid-form">' +
+                        '<hr class="section-divider">' +
+                        '<div class="form-row">' +
+                            '<div class="form-group">' +
+                                '<label>Frequency</label>' +
+                                '<select id="feed-freq-' + id + '" onchange="updateFeedLabel(' + id + ')">' +
+                                    '<option value="continuous">Continuous</option>' +
+                                    '<option value="q2">Q2h (12 feeds/day)</option>' +
+                                    '<option value="q3" selected>Q3h (8 feeds/day)</option>' +
+                                    '<option value="q4">Q4h (6 feeds/day)</option>' +
+                                '</select>' +
+                            '</div>' +
+                            '<div class="form-group">' +
+                                '<label id="feed-vol-label-' + id + '">Volume per feed (mL)</label>' +
+                                '<input type="number" id="feed-vol-' + id + '" step="0.1" min="0" placeholder="0">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="form-group">' +
+                            '<label>Calories per oz (kcal/oz)</label>' +
+                            '<input type="number" id="feed-cal-' + id + '" step="1" min="0" placeholder="20">' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+
+            container.appendChild(card);
+        }
+
+        function selectType(id, type) {
+            document.getElementById('btn-clears-' + id).classList.toggle('active', type === 'clears');
+            document.getElementById('btn-tpn-' + id).classList.toggle('active', type === 'tpn');
+            document.getElementById('btn-lipids-' + id).classList.toggle('active', type === 'lipids');
+            document.getElementById('btn-feeds-' + id).classList.toggle('active', type === 'feeds');
+
+            var labels = { clears: 'Clears', tpn: 'TPN', lipids: 'Lipids', feeds: 'Feeds' };
+            document.getElementById('chosen-' + id).innerHTML = '<div class="chosen-label">You chose: ' + labels[type] + '</div>';
+
+            document.querySelector('#fluid-' + id + ' .fluid-card-header h3').textContent = 'Fluid ' + id;
+
+            document.getElementById('fluid-' + id).dataset.type = type;
+            var showRate = (type === 'clears' || type === 'tpn');
+            document.getElementById('rate-group-' + id).style.display = showRate ? 'block' : 'none';
+            document.getElementById('clears-form-' + id).classList.toggle('visible', type === 'clears');
+            document.getElementById('tpn-form-' + id).classList.toggle('visible', type === 'tpn');
+            document.getElementById('lipids-form-' + id).classList.toggle('visible', type === 'lipids');
+            document.getElementById('feeds-form-' + id).classList.toggle('visible', type === 'feeds');
+        }
+
+        function updateFeedLabel(id) {
+            var freq = document.getElementById('feed-freq-' + id).value;
+            var label = document.getElementById('feed-vol-label-' + id);
+            label.textContent = (freq === 'continuous') ? 'Rate (mL/hr)' : 'Volume per feed (mL)';
+        }
+
+        function removeFluid(id) {
+            var card = document.getElementById('fluid-' + id);
+            if (card) card.remove();
+        }
+
+        function calculate() {
+            var weight = parseFloat(document.getElementById('weight').value);
+            if (!weight || weight <= 0) {
+                alert('Please enter a valid weight.');
+                return;
+            }
+
+            var cards = document.querySelectorAll('[id^="fluid-"]');
+            var fluidCards = [];
+            cards.forEach(function(c) {
+                if (c.id.match(/^fluid-\d+$/)) fluidCards.push(c);
+            });
+
+            if (fluidCards.length === 0) {
+                alert('Please add at least one fluid.');
+                return;
+            }
+
+            var totalRate = 0, totalNa = 0, totalK = 0, totalCa = 0, totalGIR = 0, totalProtein = 0, totalKcal = 0;
+            var rows = [];
+
+            fluidCards.forEach(function(card) {
+                var id = card.id.replace('fluid-', '');
+                var type = card.dataset.type;
+                if (!type) return;
+
+                var rate = parseFloat(document.getElementById('rate-' + id).value) || 0;
+                var volPerKgDay = weight > 0 ? rate * 24 / weight : 0;
+                var na = 0, k = 0, ca = 0, gir = 0, protein = 0, kcal = 0;
+                var fluidLabel = '';
+                var aceClLabel = '';
+
+                if (type === 'clears') {
+                    var dextrose = parseFloat(document.getElementById('dextrose-clears-' + id).value) || 0;
+                    var fluidType = document.getElementById('fluid-type-' + id).value;
+                    var kMeq = parseFloat(document.getElementById('k-clears-' + id).value) || 0;
+                    var caMg = parseFloat(document.getElementById('ca-clears-' + id).value) || 0;
+                    var caMeq = caMg * 0.00465; // mg CaGluconate to mEq Ca
+                    var syringeVol = parseFloat(document.getElementById('syringe-vol-' + id).value) || 0;
+
+                    var naConc = NA_CONCENTRATIONS[fluidType] || 0;
+                    na = naConc * rate * 24 / (1000 * weight);
+
+                    if (syringeVol > 0) {
+                        k = (kMeq / syringeVol) * rate * 24 / weight;
+                        ca = (caMeq / syringeVol) * rate * 24 / weight;
+                    }
+
+                    gir = dextrose * rate / (6 * weight);
+
+                    var fluidTypeName = fluidType === 'none' ? 'D-Water' : fluidType;
+                    fluidLabel = 'Clears: D' + dextrose + ' ' + fluidTypeName;
+
+                } else if (type === 'tpn') {
+                    var dextroseTpn = parseFloat(document.getElementById('dextrose-tpn-' + id).value) || 0;
+                    protein = parseFloat(document.getElementById('protein-' + id).value) || 0;
+                    na = parseFloat(document.getElementById('na-tpn-' + id).value) || 0;
+                    k = parseFloat(document.getElementById('k-tpn-' + id).value) || 0;
+                    ca = parseFloat(document.getElementById('ca-tpn-' + id).value) || 0;
+                    var aceCl = document.getElementById('ace-cl-' + id).value;
+
+                    gir = dextroseTpn * rate / (6 * weight);
+
+                    var aceClLabels = {
+                        'max-ace': 'Max Acetate',
+                        '2:1-ace': '2:1 Ace:Cl',
+                        '1:1': '1:1 Balanced',
+                        '2:1-cl': '2:1 Cl:Ace',
+                        'max-cl': 'Max Chloride'
+                    };
+                    aceClLabel = aceClLabels[aceCl] || '';
+                    fluidLabel = 'TPN: D' + dextroseTpn + ', ' + protein + ' g/kg protein';
+
+                } else if (type === 'lipids') {
+                    var mlPerKg = parseFloat(document.getElementById('lipids-mlkg-' + id).value) || 0;
+                    volPerKgDay = mlPerKg;
+                    rate = mlPerKg * weight / 24;
+                    fluidLabel = 'Lipids: ' + fmt(mlPerKg, 1) + ' mL/kg/day';
+
+                } else if (type === 'feeds') {
+                    var freq = document.getElementById('feed-freq-' + id).value;
+                    var feedVol = parseFloat(document.getElementById('feed-vol-' + id).value) || 0;
+                    var calPerOz = parseFloat(document.getElementById('feed-cal-' + id).value) || 0;
+                    var dailyVol;
+                    var feedsPerDay = { 'continuous': 0, 'q2': 12, 'q3': 8, 'q4': 6 };
+                    var freqLabels = { 'continuous': 'Continuous', 'q2': 'Q2h', 'q3': 'Q3h', 'q4': 'Q4h' };
+
+                    if (freq === 'continuous') {
+                        dailyVol = feedVol * 24;
+                        rate = feedVol;
+                    } else {
+                        dailyVol = feedVol * feedsPerDay[freq];
+                        rate = dailyVol / 24;
+                    }
+
+                    volPerKgDay = dailyVol / weight;
+                    kcal = (dailyVol / 30) * calPerOz / weight;
+
+                    var volLabel = (freq === 'continuous') ? fmt(feedVol, 1) + ' mL/hr' : fmt(feedVol, 1) + ' mL x' + feedsPerDay[freq];
+                    fluidLabel = 'Feeds: ' + freqLabels[freq] + ', ' + volLabel + ', ' + fmt(calPerOz, 0) + ' kcal/oz';
+                }
+
+                totalRate += rate;
+                totalNa += na;
+                totalK += k;
+                totalCa += ca;
+                totalGIR += gir;
+                totalProtein += protein;
+                totalKcal += kcal;
+
+                rows.push({
+                    name: 'Fluid ' + id,
+                    fluidLabel: fluidLabel,
+                    rate: rate,
+                    volPerKgDay: volPerKgDay,
+                    na: na,
+                    k: k,
+                    ca: ca,
+                    gir: gir,
+                    protein: protein,
+                    kcal: kcal,
+                    aceClLabel: aceClLabel,
+                    type: type
+                });
+            });
+
+            if (rows.length === 0) {
+                alert('Please select a type for at least one fluid.');
+                return;
+            }
+
+            var totalVol = weight > 0 ? totalRate * 24 / weight : 0;
+
+            var thead = document.getElementById('results-thead');
+            var tbody = document.getElementById('results-tbody');
+
+            thead.innerHTML =
+                '<tr>' +
+                    '<th style="text-align:left">Fluid</th>' +
+                    '<th>Rate<br><small>mL/hr</small></th>' +
+                    '<th>Volume<br><small>mL/kg/day</small></th>' +
+                    '<th>Na<br><small>mEq/kg/day</small></th>' +
+                    '<th>K<br><small>mEq/kg/day</small></th>' +
+                    '<th>Ca<br><small>mEq/kg/day</small></th>' +
+                    '<th>GIR<br><small>mg/kg/min</small></th>' +
+                    '<th>Protein<br><small>g/kg/day</small></th>' +
+                    '<th>kcal<br><small>kcal/kg/day</small></th>' +
+                '</tr>';
+
+            var tbodyHtml = '';
+            rows.forEach(function(r) {
+                var detail = r.aceClLabel ? '<br><span class="fluid-detail-note">' + r.aceClLabel + '</span>' : '';
+                tbodyHtml +=
+                    '<tr>' +
+                        '<td>' + r.name + '<br><span class="fluid-detail-note">' + r.fluidLabel + '</span>' + detail + '</td>' +
+                        '<td>' + fmt(r.rate, 1) + '</td>' +
+                        '<td>' + fmt(r.volPerKgDay, 1) + '</td>' +
+                        '<td>' + fmt(r.na, 2) + '</td>' +
+                        '<td>' + fmt(r.k, 2) + '</td>' +
+                        '<td>' + fmt(r.ca, 2) + '</td>' +
+                        '<td>' + fmt(r.gir, 2) + '</td>' +
+                        '<td>' + (r.protein > 0 ? fmt(r.protein, 1) : '\u2014') + '</td>' +
+                        '<td>' + (r.kcal > 0 ? fmt(r.kcal, 1) : '\u2014') + '</td>' +
+                    '</tr>';
+            });
+
+            if (rows.length > 1) {
+                tbodyHtml +=
+                    '<tr class="total-row">' +
+                        '<td>TOTAL</td>' +
+                        '<td>' + fmt(totalRate, 1) + '</td>' +
+                        '<td>' + fmt(totalVol, 1) + '</td>' +
+                        '<td>' + fmt(totalNa, 2) + '</td>' +
+                        '<td>' + fmt(totalK, 2) + '</td>' +
+                        '<td>' + fmt(totalCa, 2) + '</td>' +
+                        '<td>' + fmt(totalGIR, 2) + '</td>' +
+                        '<td>' + (totalProtein > 0 ? fmt(totalProtein, 1) : '\u2014') + '</td>' +
+                        '<td>' + (totalKcal > 0 ? fmt(totalKcal, 1) : '\u2014') + '</td>' +
+                    '</tr>';
+            }
+
+            tbody.innerHTML = tbodyHtml;
+
+            document.getElementById('results').classList.add('visible');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function fmt(value, decimals) {
+            return value.toFixed(decimals);
+        }
+
+        // Start with one fluid card
+        addFluid();
+    </script>
+</body>
+</html>
