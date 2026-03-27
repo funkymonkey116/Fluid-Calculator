@@ -535,23 +535,20 @@
         };
 
         // Electrolyte content per 100 mL of final preparation (mEq for Na/K/Ca/Phos/Mg, g for protein)
-        // Values from Abbott product references — verify against current manufacturer data before clinical use
+        // Values from VNICU Vitamin Guidance and Enteral Nutrient Comparisons reference
         const FEED_FORMULAS = {
-            'custom':        { label: 'Custom',                        calPerOz: 0,  per100: { na: 0,   k: 0,   ca: 0,    phos: 0,    mg: 0,    protein: 0   } },
-            'bm20':          { label: 'Breast Milk (20 kcal/oz)',      calPerOz: 20, per100: { na: 0.8, k: 1.4, ca: 1.30, phos: 0.45, mg: 0.29, protein: 1.0 } },
-            'sim360':        { label: 'Similac 360 Total Care',        calPerOz: 20, per100: { na: 0.7, k: 1.9, ca: 2.65, phos: 1.23, mg: 0.34, protein: 1.4 } },
-            'bm-hmf22':      { label: 'BM + HMF 22 kcal',             calPerOz: 22, per100: { na: 1.0, k: 1.7, ca: 3.58, phos: 1.31, mg: 0.33, protein: 1.4 } },
-            'bm-hmf24':      { label: 'BM + HMF 24 kcal',             calPerOz: 24, per100: { na: 1.2, k: 2.0, ca: 5.85, phos: 2.16, mg: 0.37, protein: 1.8 } },
-            'bm-hmfhp22':    { label: 'BM + HMF HP 22 kcal',          calPerOz: 22, per100: { na: 1.0, k: 1.7, ca: 3.58, phos: 1.31, mg: 0.33, protein: 1.6 } },
-            'bm-hmfhp24':    { label: 'BM + HMF HP 24 kcal',          calPerOz: 24, per100: { na: 1.2, k: 2.0, ca: 5.85, phos: 2.16, mg: 0.37, protein: 2.2 } },
-            'ssc22':         { label: 'Similac Special Care 22 kcal',  calPerOz: 22, per100: { na: 1.40, k: 2.42, ca: 6.69, phos: 2.40, mg: 0.75, protein: 2.0 } },
-            'ssc24':         { label: 'Similac Special Care 24 kcal',  calPerOz: 24, per100: { na: 1.52, k: 2.64, ca: 7.30, phos: 2.61, mg: 0.82, protein: 2.2 } },
-            'bm-neosure22':  { label: 'BM + NeoSure Pwd 22 kcal',     calPerOz: 22, per100: { na: 1.05, k: 1.8, ca: 2.15, phos: 0.76, mg: 0.39, protein: 1.3 } },
-            'bm-neosure24':  { label: 'BM + NeoSure Pwd 24 kcal',     calPerOz: 24, per100: { na: 1.3, k: 2.2, ca: 3.00, phos: 1.06, mg: 0.49, protein: 1.6 } },
-            'sim-neosure22': { label: 'Sim + NeoSure Pwd 22 kcal',     calPerOz: 22, per100: { na: 0.95, k: 2.3, ca: 3.50, phos: 1.54, mg: 0.44, protein: 1.7 } },
-            'sim-neosure24': { label: 'Sim + NeoSure Pwd 24 kcal',     calPerOz: 24, per100: { na: 1.2, k: 2.7, ca: 4.35, phos: 1.84, mg: 0.54, protein: 2.0 } },
-            'neosure22':     { label: 'NeoSure 22 kcal/oz',           calPerOz: 22, per100: { na: 1.1, k: 2.6, ca: 3.90, phos: 1.52, mg: 0.46, protein: 1.9 } },
-            'neosure24':     { label: 'NeoSure 24 kcal/oz',           calPerOz: 24, per100: { na: 1.2, k: 2.8, ca: 4.25, phos: 1.65, mg: 0.50, protein: 2.1 } }
+            'custom':         { label: 'Custom',                        calPerOz: 0,  per100: { na: 0,    k: 0,    ca: 0,    phos: 0,    mg: 0, protein: 0    } },
+            'pthm20':         { label: 'Mature PTHM (20 kcal/oz)',      calPerOz: 20, per100: { na: 1.08, k: 1.5,  ca: 1.25, phos: 0.45, mg: 0, protein: 1.4  } },
+            'term-hm20':      { label: 'Term HM (20 kcal/oz)',          calPerOz: 20, per100: { na: 0.77, k: 1.4,  ca: 1.40, phos: 0.45, mg: 0, protein: 1.05 } },
+            'hm-hmfhp24':     { label: 'HM+HMF HP 1:25 (24 kcal)',     calPerOz: 24, per100: { na: 1.9,  k: 2.5,  ca: 6.05, phos: 2.16, mg: 0, protein: 2.8  } },
+            'hm-hmf24':       { label: 'HM+HMF 1:25 (24 kcal)',        calPerOz: 24, per100: { na: 1.7,  k: 3.0,  ca: 6.85, phos: 2.16, mg: 0, protein: 2.3  } },
+            'hm-nsp22':       { label: 'HM+NSP (22 kcal)',             calPerOz: 22, per100: { na: 0.87, k: 1.7,  ca: 1.75, phos: 0.58, mg: 0, protein: 1.2  } },
+            'hm-nsp24':       { label: 'HM+NSP (24 kcal)',             calPerOz: 24, per100: { na: 0.95, k: 1.9,  ca: 2.15, phos: 0.71, mg: 0, protein: 1.4  } },
+            'hm-nsp27':       { label: 'HM+NSP (27 kcal)',             calPerOz: 27, per100: { na: 1.09, k: 2.2,  ca: 2.65, phos: 0.90, mg: 0, protein: 1.7  } },
+            'hm-hmfhp-nsp27': { label: 'HM+HMF HP+NSP (27 kcal)',      calPerOz: 27, per100: { na: 2.14, k: 3.04, ca: 6.55, phos: 2.35, mg: 0, protein: 3.1  } },
+            'sschp24':        { label: 'SSC HP (24 kcal)',              calPerOz: 24, per100: { na: 1.5,  k: 2.7,  ca: 7.30, phos: 2.61, mg: 0, protein: 2.7  } },
+            'ssc30':          { label: 'SSC (30 kcal)',                 calPerOz: 30, per100: { na: 1.9,  k: 3.4,  ca: 9.15, phos: 3.26, mg: 0, protein: 3.0  } },
+            'neosure22':      { label: 'Neosure (22 kcal)',             calPerOz: 22, per100: { na: 1.1,  k: 2.7,  ca: 3.90, phos: 1.48, mg: 0, protein: 2.08 } }
         };
 
         var FEED_FORMULA_OPTIONS = Object.keys(FEED_FORMULAS).map(function(key) {
